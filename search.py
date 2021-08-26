@@ -113,6 +113,23 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
+    print("Start:", problem.getStartState())
+    print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
+    startNode = problem.getStartState()
+    frontier = { startNode }
+    expanded = { }
+    while frontier is not empty:
+        node = frontier.pop()
+        if problem.isGoalState(node):
+            #return path_to_node
+        if node not in expanded:
+            expanded.add(node)
+            children = node.getChildren()
+            for child in children:
+                frontier.push(child)
+
+    problem.expand()
+
     util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
