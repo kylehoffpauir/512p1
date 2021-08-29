@@ -19,6 +19,7 @@ Pacman agents (in searchAgents.py).
 
 import util
 
+
 class SearchProblem:
     """
     This class outlines the structure of a search problem, but doesn't implement
@@ -97,7 +98,8 @@ def tinyMazeSearch(problem):
     from game import Directions
     s = Directions.SOUTH
     w = Directions.WEST
-    return  [s, s, w, s, w, w, s, w]
+    return [s, s, w, s, w, w, s, w]
+
 
 def depthFirstSearch(problem):
     """
@@ -112,30 +114,68 @@ def depthFirstSearch(problem):
     print("Start:", problem.getStartState())
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    print("Start:", problem.getStartState())
-    print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
-    startNode = problem.getStartState()
-    frontier = { startNode }
-    expanded = { }
-    while frontier is not empty:
+    # stack to keep track of where our agent can move
+    frontier = util.Stack()
+    # start node contains the start state and an empty list representing the actions its taken thusfar
+    startNode = (problem.getStartState(), [])
+    frontier.push(startNode)
+    # holds the states explored so we dont end up in an infinite loop
+    explored = []
+    while not frontier.isEmpty():
         node = frontier.pop()
-        if problem.isGoalState(node):
-            #return path_to_node
-        if node not in expanded:
-            expanded.add(node)
-            children = node.getChildren()
+        # the current state of our node
+        currentState = node[0]
+        # the path we took to get to our current state
+        actionPath = node[1]
+
+        # if we are at the goal, then we are done
+        if problem.isGoalState(currentState):
+            return actionPath
+        # ensure that we are not double exploring a node
+        if currentState not in explored:
+            # add the current state to our explored so we dont go over it more than once
+            explored.append(currentState)
+            # children is a list of children connected to our currentState in format (child, action, stepCost)
+            children = problem.expand(currentState)
+            # for every child in our list of children, extract the info we need (state, action)
             for child in children:
-                frontier.push(child)
+                # throw node on stack in form new state, newPath
+                childNode = (child[0], actionPath + [child[1]])
+                frontier.push(childNode)
 
-    problem.expand()
-
-    util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Same as DFS except using the Queue instead of the stack
+    # Queue to keep track of where our agent can move
+    frontier = util.Queue()
+    # start node contains the start state and an empty list representing the actions its taken thusfar
+    startNode = (problem.getStartState(), [])
+    frontier.push(startNode)
+    # holds the states explored so we dont end up in an infinite loop
+    explored = []
+    while not frontier.isEmpty():
+        node = frontier.pop()
+        # the current state of our node
+        currentState = node[0]
+        # the path we took to get to our current state
+        actionPath = node[1]
+
+        # if we are at the goal, then we are done
+        if problem.isGoalState(currentState):
+            return actionPath
+        # ensure that we are not double exploring a node
+        if currentState not in explored:
+            # add the current state to our explored so we dont go over it more than once
+            explored.append(currentState)
+            # children is a list of children connected to our currentState in format (child, action, stepCost)
+            children = problem.expand(currentState)
+            # for every child in our list of children, extract the info we need (state, action)
+            for child in children:
+                # throw node on stack in form new state, newPath
+                childNode = (child[0], actionPath + [child[1]])
+                frontier.push(childNode)
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -143,6 +183,7 @@ def nullHeuristic(state, problem=None):
     goal in the provided SearchProblem.  This heuristic is trivial.
     """
     return 0
+
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
