@@ -114,13 +114,16 @@ def depthFirstSearch(problem):
     print("Start:", problem.getStartState())
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     """
+
     # stack to keep track of where our agent can move
     frontier = util.Stack()
     # start node contains the start state and an empty list representing the actions its taken thusfar
     startNode = (problem.getStartState(), [])
     frontier.push(startNode)
-    # holds the states explored so we dont end up in an infinite loop
-    explored = []
+
+    # holds the states visited so we dont end up in an infinite loop
+    expanded = []
+
     while not frontier.isEmpty():
         node = frontier.pop()
         # the current state of our node
@@ -128,20 +131,21 @@ def depthFirstSearch(problem):
         # the path we took to get to our current state
         actionPath = node[1]
 
-        # if we are at the goal, then we are done
+        # if we are at the goal, then return path to the goal
         if problem.isGoalState(currentState):
             return actionPath
-        # ensure that we are not double exploring a node
-        if currentState not in explored:
-            # add the current state to our explored so we dont go over it more than once
-            explored.append(currentState)
-            # children is a list of children connected to our currentState in format (child, action, stepCost)
+        # ensure that we are not double visiting a node
+        if currentState not in expanded:
+            # add the current state to our expanded so we dont go over it more than once
+            expanded.append(currentState)
+            # children is a list of nodes connected to our currentState in format (child, action, stepCost)
             children = problem.expand(currentState)
-            # for every child in our list of children, extract the info we need (state, action)
             for child in children:
                 # throw node on stack in form new state, newPath
                 childNode = (child[0], actionPath + [child[1]])
                 frontier.push(childNode)
+    # if we get through the entire search frontier without reaching the goal, return None
+    return None
 
 
 def breadthFirstSearch(problem):
@@ -152,8 +156,10 @@ def breadthFirstSearch(problem):
     # start node contains the start state and an empty list representing the actions its taken thusfar
     startNode = (problem.getStartState(), [])
     frontier.push(startNode)
-    # holds the states explored so we dont end up in an infinite loop
-    explored = []
+
+    # holds the states visited so we dont end up in an infinite loop
+    expanded = []
+
     while not frontier.isEmpty():
         node = frontier.pop()
         # the current state of our node
@@ -161,20 +167,21 @@ def breadthFirstSearch(problem):
         # the path we took to get to our current state
         actionPath = node[1]
 
-        # if we are at the goal, then we are done
+        # if we are at the goal, then return path to the goal
         if problem.isGoalState(currentState):
             return actionPath
-        # ensure that we are not double exploring a node
-        if currentState not in explored:
-            # add the current state to our explored so we dont go over it more than once
-            explored.append(currentState)
-            # children is a list of children connected to our currentState in format (child, action, stepCost)
+        # ensure that we are not double visiting a node
+        if currentState not in expanded:
+            # add the current state to our expanded so we dont go over it more than once
+            expanded.append(currentState)
+            # children is a list of nodes connected to our currentState in format (child, action, stepCost)
             children = problem.expand(currentState)
-            # for every child in our list of children, extract the info we need (state, action)
             for child in children:
                 # throw node on stack in form new state, newPath
                 childNode = (child[0], actionPath + [child[1]])
                 frontier.push(childNode)
+    # if we get through the entire search frontier without reaching the goal, return None
+    return None
 
 
 def nullHeuristic(state, problem=None):
@@ -187,11 +194,134 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # priority queue to keep track of where our agent can move
+    frontier = util.PriorityQueue()
+    # start node contains the start state, an empty list representing the actions its taken thusfar
+    startNode = (problem.getStartState(), [])
+    # push node onto the stack with a prio of 0 (arbitrary bc start)
+    frontier.push(startNode, 0)
+
+    # holds the states visited so we dont end up in an infinite loop
+    expanded = []
+
+    while not frontier.isEmpty():
+        node = frontier.pop()
+        # the current state of our node
+        currentState = node[0]
+        # the path we took to get to our current state
+        actionPath = node[1]
+        # if we are at the goal, then return path to the goal
+        if problem.isGoalState(currentState):
+            return actionPath
+        # ensure that we are not double visiting a node
+        if currentState not in expanded:
+            # add the current state to our expanded so we dont go over it more than once
+            expanded.append(currentState)
+            # children is a list of nodes connected to our currentState in format (child, action, stepCost)
+            children = problem.expand(currentState)
+            for child in children:
+                # throw node on stack in form new state, newPath, stepCost
+                newPath = actionPath + [child[1]]
+                childState = child[0]
+                childNode = (childState, newPath)
+
+                # g(n) -- the observed cost from startState to the child state
+                cost = problem.getCostOfActionSequence(newPath)
+                # g(n) + h(n) -- take g(n) and add h(n) which is the heuristic estimate of child state to goal
+                cost += heuristic(childState, problem)
+
+                frontier.push(childNode, cost)
+    # if we get through the entire search frontier without reaching the goal, return None
+    return None
+
+def iterativeDeepeningSearch(problem):
+    '''Implements iterative deepening search to find an optimal solution
+    path for the given problem.
+
+    This is done by repeatedly running a depth-limited version of
+    depth-first search for increasing depths.  A depth-limited search
+    only expands a node--retrieves its children and adds them to the
+    frontier--if the path to the node has a number of actions that is
+    no more than the given depth.  If a node would have been expanded
+    except for the depth limit, we say that the search has been "cut
+    off" for that depth limit.  As suggested by the slides, we will
+    run this search for depth limits of 1, 2, 3, etc., until either a
+    solution is found or a depth-limited search has been run without
+    being cut off for a given depth limit and without finding a
+    solution, in which case no goal node can be reached and
+    iterativeDeepeningSearch should return None.
+
+    Args:
+      problem: A SearchProblem instance that defines a search problem.
+
+    Returns:
+      A list of actions that is as short as possible for reaching a
+        goal node, or None if no goal node is reachable from the initial
+        state.
+
+    '''
+    depth_limit = 0
+    while True:
+        depth_limit += 1
+        # print(f'Search to depth {depth_limit}')
+        result = limitedDepthFirstSearch(problem, depth_limit)
+        if result != "cutoff":
+            return result
+
+
+def limitedDepthFirstSearch(problem, depth_limit=1):
+    '''Runs depth-first search with a depth bound.
+
+    Args:
+      problem: A SearchProblem instance that defines a search problem.
+      depth_limit: A node will not be expanded if the path to the node
+        has a length exceeding the depth value, which is expected to
+        be a positive integer.
+
+    Returns:
+      A path to a goal node, if one is found, or the string "cutoff" if no
+      goal was found and the search was cut off for the given depth limit,
+      or None if no goal was found and the search was not cut off.
+    '''
+
+    class Node:
+        def __init__(self, state, path):
+            self.state = state
+            self.path = path
+
+    def isCycle(node, expanded):
+        for expand in expanded:
+            # if (node.state == expand.state) and (node.path in expand.path):
+            if node.state == expand.state:
+                return True
+        return False
+
+    node = Node(problem.getStartState(), ())
+    frontier = util.Stack()
+    frontier.push(node)
+    expanded = []
+    result = None
+    while not frontier.isEmpty():
+        node = frontier.pop()
+        if problem.isGoalState(node.state):
+            return list(node.path)
+        if len(node.path) > depth_limit:
+            result = "cutoff"
+        elif not isCycle(node, expanded):
+        #elif node.state not in expanded:
+            expanded.append(node)
+            child_nodes = problem.expand(node.state)
+            for child in child_nodes:
+                frontier.push(Node(child[0], node.path + (child[1],)))
+    return result
+
+
+
 
 
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
 astar = aStarSearch
+# Abbreviation for use on command line
+ids = iterativeDeepeningSearch
